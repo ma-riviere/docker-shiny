@@ -45,8 +45,7 @@ RUN wget https://cdn.rstudio.com/r/debian-${DEBIAN_NUMERIC}/pkgs/r-${R_VERSION}_
     && apt-get update && apt-get install -y ./r-${R_VERSION}_1_amd64.deb \
     && ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R \
     && ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript \
-    && rm r-${R_VERSION}_1_amd64.deb \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && rm r-${R_VERSION}_1_amd64.deb
 
 # Cleanup to reduce image size
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -55,10 +54,7 @@ EXPOSE 3838
 
 # R packages
 ## Copy local (repo) renv/ folder to /srv/shiny-server/
-USER shiny
-
-COPY renv/activate.R renv/settings.json renv/.gitignore /srv/shiny-server/renv/
-COPY renv/profiles/ /srv/shiny-server/renv/profiles/
+COPY renv/ /srv/shiny-server/renv/
 COPY --chmod=755 docker-shiny.sh /srv/shiny-server/docker-shiny.sh
 
 WORKDIR /srv/shiny-server
