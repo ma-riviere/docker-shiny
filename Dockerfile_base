@@ -40,6 +40,7 @@ RUN getent group shiny || groupadd -r shiny \
 
 # Install R
 ARG R_VERSION
+ARG DEBIAN_NUMERIC
 RUN wget https://cdn.rstudio.com/r/debian-${DEBIAN_NUMERIC}/pkgs/r-${R_VERSION}_1_amd64.deb \
     && apt-get update && apt-get install -y ./r-${R_VERSION}_1_amd64.deb \
     && ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R \
