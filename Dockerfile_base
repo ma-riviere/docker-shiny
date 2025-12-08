@@ -57,7 +57,8 @@ EXPOSE 3838
 ## Copy local (repo) renv/ folder to /srv/shiny-server/
 USER shiny
 
-COPY renv/ /srv/shiny-server/renv/
+COPY renv/activate.R renv/settings.json renv/.gitignore /srv/shiny-server/renv/
+COPY renv/profiles/ /srv/shiny-server/renv/profiles/
 COPY --chmod=755 docker-shiny.sh /srv/shiny-server/docker-shiny.sh
 
 WORKDIR /srv/shiny-server
