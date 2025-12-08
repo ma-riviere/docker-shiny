@@ -37,5 +37,6 @@ RUN R -e "source('renv/activate.R'); renv::restore()"
 
 EXPOSE 3838
 
+# For docker run (ENTRYPOINT sets a "fixed" executable, to which args can be passed)
 USER shiny
 ENTRYPOINT ["/srv/shiny-server/docker-shiny.sh"]

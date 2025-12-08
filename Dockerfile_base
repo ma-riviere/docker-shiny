@@ -64,6 +64,6 @@ RUN R -e "source('renv/activate.R'); renv::restore()"
 RUN echo "RENV_CONFIG_SANDBOX_ENABLED=FALSE" >> .Renviron
 RUN echo "RENV_CONFIG_SYNCHRONIZED_CHECK = FALSE" >> .Renviron
 
-# Start Shiny Server
+# For docker run (CMD can be overriden)
 USER shiny
 CMD ["/srv/shiny-server/docker-shiny.sh"]
