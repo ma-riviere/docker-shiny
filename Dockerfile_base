@@ -32,7 +32,8 @@ RUN wget https://download3.rstudio.org/ubuntu-20.04/x86_64/shiny-server-${SHINY_
     && rm shiny-server-${SHINY_SERVER_VERSION}-amd64.deb
 
 # Create shiny user and directories
-RUN groupadd -r shiny && useradd -r -g shiny -d /srv/shiny-server -s /sbin/nologin shiny \
+RUN getent group shiny || groupadd -r shiny \
+    && getent passwd shiny || useradd -r -g shiny -d /srv/shiny-server -s /sbin/nologin shiny \
     && mkdir -p /srv/shiny-server /var/log/shiny-server \
     && chown -R shiny:shiny /srv/shiny-server /var/log/shiny-server \
     && chmod 755 /srv/shiny-server
