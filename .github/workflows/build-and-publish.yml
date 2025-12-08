@@ -1,0 +1,211 @@
+name: Build and Publish Docker Images
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+        inputs:
+            force_rebuild:
+                description: 'Force rebuild both images'
+                type: boolean
+                default: false
+
+env:
+    DEBIAN_VERSION: bookworm
+    DEBIAN_NUMERIC: 12
+    R_VERSION: 4.5.1
+    SHINY_SERVER_VERSION: 1.5.23.1030
+
+permissions:
+    contents: read
+    packages: write
+
+jobs:
+    check_base_image:
+        name: Check if base image exists
+        runs-on: ubuntu-latest
+        outputs:
+            exists: ${{ steps.check.outputs.exists }}
+        steps:
+            - name: Login to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.CICD_GITHUB_PAT }}
+
+            - name: Check image existence
+              id: check
+              run: |
+                  if docker manifest inspect ghcr.io/${{ github.repository }}:base >/dev/null 2>&1; then
+                      echo "exists=true" >> $GITHUB_OUTPUT
+                  else
+                      echo "exists=false" >> $GITHUB_OUTPUT
+                  fi
+
+    detect_base_changes:
+        name: Detect base image changes
+        runs-on: ubuntu-latest
+        outputs:
+            base_changed: ${{ steps.filter.outputs.base }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 2
+
+            - name: Detect file changes
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      base:
+                        - 'Dockerfile_base'
+                        - 'renv/profiles/base/renv.lock'
+
+    build_base:
+        name: Build base image
+        runs-on: ubuntu-latest
+        needs: [check_base_image, detect_base_changes]
+        if: |
+            github.event.inputs.force_rebuild == 'true' ||
+            needs.check_base_image.outputs.exists == 'false' ||
+            needs.detect_base_changes.outputs.base_changed == 'true'
+        outputs:
+            built: ${{ steps.set_output.outputs.built }}
+            digest: ${{ steps.build.outputs.digest }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract metadata
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ghcr.io/${{ github.repository }}
+                  tags: type=raw,value=base
+
+            - name: Build and push base image
+              id: build
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./Dockerfile_base
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  build-args: |
+                      DEBIAN_VERSION=${{ env.DEBIAN_VERSION }}
+                      DEBIAN_NUMERIC=${{ env.DEBIAN_NUMERIC }}
+                      R_VERSION=${{ env.R_VERSION }}
+                      SHINY_SERVER_VERSION=${{ env.SHINY_SERVER_VERSION }}
+                  cache-from: type=gha,scope=base
+                  cache-to: type=gha,mode=max,scope=base
+                  platforms: linux/amd64
+
+            - name: Set outputs
+              id: set_output
+              run: echo "built=true" >> $GITHUB_OUTPUT
+
+    detect_tests_changes:
+        name: Detect tests image changes
+        runs-on: ubuntu-latest
+        outputs:
+            tests_changed: ${{ steps.filter.outputs.tests }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 2
+
+            - name: Detect file changes
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      tests:
+                        - 'Dockerfile_tests'
+                        - 'renv/profiles/tests/renv.lock'
+
+    build_tests:
+        name: Build tests image
+        runs-on: ubuntu-latest
+        needs: [build_base, detect_tests_changes]
+        if: |
+            always() &&
+            needs.build_base.result != 'failure' &&
+            (
+                github.event.inputs.force_rebuild == 'true' ||
+                needs.build_base.outputs.built == 'true' ||
+                needs.detect_tests_changes.outputs.tests_changed == 'true'
+            )
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract metadata
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ghcr.io/${{ github.repository }}
+                  tags: type=raw,value=tests
+
+            - name: Build and push tests image
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./Dockerfile_tests
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  build-args: |
+                      REGISTRY_IMAGE=ghcr.io/${{ github.repository }}
+                  cache-from: type=gha,scope=tests
+                  cache-to: type=gha,mode=max,scope=tests
+                  platforms: linux/amd64
+
+    verify:
+        name: Verify images
+        runs-on: ubuntu-latest
+        needs: [build_base, build_tests]
+        if: always() && (needs.build_base.outputs.built == 'true' || needs.build_tests.result == 'success')
+        steps:
+            - name: Login to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Test base image
+              if: needs.build_base.outputs.built == 'true'
+              run: |
+                  echo "Testing base image..."
+                  docker run --rm ghcr.io/${{ github.repository }}:base R --version
+                  docker run --rm ghcr.io/${{ github.repository }}:base R -e "cat('Shiny version:', as.character(packageVersion('shiny')), '\n')"
+                  docker run --rm ghcr.io/${{ github.repository }}:base R -e "cat('auth0 installed:', 'auth0' %in% installed.packages()[,1], '\n')"
+
+            - name: Test tests image
+              if: needs.build_tests.result == 'success'
+              run: |
+                  echo "Testing tests image..."
+                  docker run --rm ghcr.io/${{ github.repository }}:tests R --version
+                  docker run --rm ghcr.io/${{ github.repository }}:tests R -e "cat('shinytest2 version:', as.character(packageVersion('shinytest2')), '\n')"
+                  docker run --rm ghcr.io/${{ github.repository }}:tests chromium --version
+                  docker run --rm ghcr.io/${{ github.repository }}:tests R -e "cat('Chromium path:', Sys.getenv('CHROMOTE_CHROME'), '\n')"

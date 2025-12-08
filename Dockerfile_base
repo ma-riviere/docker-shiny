@@ -1,0 +1,70 @@
+ARG DEBIAN_VERSION=bookworm
+ARG DEBIAN_NUMERIC=12
+ARG R_VERSION=4.5.1
+
+FROM debian:${DEBIAN_VERSION}-slim
+
+# Locale setup
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+
+# Install locales first
+RUN apt-get update && apt-get install -y locales \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+
+# Update system
+RUN apt-get update && apt-get upgrade -y
+
+# Dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    libssl-dev \
+    xtail \
+    lsb-release
+
+# Install Shiny Server
+ARG SHINY_SERVER_VERSION=1.5.23.1030
+RUN wget https://download3.rstudio.org/ubuntu-20.04/x86_64/shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
+    && apt-get update \
+    && apt-get install -y ./shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
+    && rm shiny-server-${SHINY_SERVER_VERSION}-amd64.deb
+
+# Create shiny user and directories
+RUN groupadd -r shiny && useradd -r -g shiny -d /srv/shiny-server -s /sbin/nologin shiny \
+    && mkdir -p /srv/shiny-server /var/log/shiny-server \
+    && chown -R shiny:shiny /srv/shiny-server /var/log/shiny-server \
+    && chmod 755 /srv/shiny-server
+
+# Install R
+ARG R_VERSION
+RUN wget https://cdn.rstudio.com/r/debian-${DEBIAN_NUMERIC}/pkgs/r-${R_VERSION}_1_amd64.deb \
+    && apt-get update && apt-get install -y ./r-${R_VERSION}_1_amd64.deb \
+    && ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R \
+    && ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript \
+    && rm r-${R_VERSION}_1_amd64.deb \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Cleanup to reduce image size
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+EXPOSE 3838
+
+# R packages
+## Copy local (repo) renv/ folder to /srv/shiny-server/
+USER shiny
+
+COPY renv/ /srv/shiny-server/renv/
+COPY --chmod=755 docker-shiny.sh /srv/shiny-server/docker-shiny.sh
+
+WORKDIR /srv/shiny-server
+ENV RENV_PROFILE=base
+RUN R -e "renv::restore()"
+
+RUN echo "RENV_CONFIG_SANDBOX_ENABLED=FALSE" >> .Renviron
+RUN echo "RENV_CONFIG_SYNCHRONIZED_CHECK = FALSE" >> .Renviron
+
+# Start Shiny Server
+USER shiny
+CMD ["/srv/shiny-server/docker-shiny.sh"]

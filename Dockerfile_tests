@@ -1,0 +1,41 @@
+ARG REGISTRY_IMAGE=ghcr.io/ma-riviere/docker-shiny
+FROM ${REGISTRY_IMAGE}:base
+
+# System dependencies for R packages + Chromium for shinytest2
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    zlib1g-dev \
+    libxml2-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
+    chromium \
+    chromium-driver
+
+# RUN wget --progress=dot:mega https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+#     && apt-get update && apt-get install -y ./google-chrome-stable_current_amd64.deb \
+#     && rm google-chrome-stable_current_amd64.deb
+
+# Cleanup to reduce image size
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Configure Chromium for shinytest2
+ENV CHROMOTE_CHROME=/usr/bin/chromium
+ENV SHINYTEST2_CHROMIUM_PATH=/usr/bin/chromium
+
+# R packages
+USER shiny
+WORKDIR /srv/shiny-server
+ENV RENV_PROFILE=tests
+RUN R -e "renv::restore()"
+
+EXPOSE 3838
+
+ENTRYPOINT ["/srv/shiny-server/docker-shiny.sh"]

@@ -1,0 +1,7 @@
+shiny
+curso-r/auth0
+bslib
+data.table
+purrr
+stringr
+ggplot2

@@ -1,0 +1,10 @@
+shiny
+bslib
+data.table
+purrr
+stringr
+ggplot2
+shinytest2
+testthat
+chromote
+xml2
