@@ -62,7 +62,7 @@ COPY --chmod=755 docker-shiny.sh /srv/shiny-server/docker-shiny.sh
 
 WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=base
-RUN R -e "renv::restore()"
+RUN R -e "source('renv/activate.R'); renv::restore()"
 
 RUN echo "RENV_CONFIG_SANDBOX_ENABLED=FALSE" >> .Renviron
 RUN echo "RENV_CONFIG_SYNCHRONIZED_CHECK = FALSE" >> .Renviron
