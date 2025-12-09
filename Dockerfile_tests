@@ -33,6 +33,7 @@ ENV SHINYTEST2_CHROMIUM_PATH=/usr/bin/chromium
 # R packages
 WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=tests
+ENV RENV_PATHS_CACHE=/opt/renv/cache
 RUN R -e "source('renv/activate.R'); renv::restore()"
 
 EXPOSE 3838

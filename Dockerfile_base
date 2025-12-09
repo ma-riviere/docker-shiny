@@ -47,6 +47,9 @@ RUN getent group shiny || groupadd -r shiny \
     && chown -R shiny:shiny /srv/shiny-server /var/log/shiny-server /var/lib/shiny-server \
     && chmod 755 /srv/shiny-server
 
+# Create renv cache directory
+RUN mkdir -p /opt/renv/cache && chown -R shiny:shiny /opt/renv
+
 # Cleanup to reduce image size
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -59,6 +62,7 @@ COPY --chmod=755 docker-shiny.sh /srv/shiny-server/docker-shiny.sh
 USER shiny
 WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=base
+ENV RENV_PATHS_CACHE=/opt/renv/cache
 RUN R -e "source('renv/activate.R'); renv::restore()"
 
 RUN echo "RENV_CONFIG_SANDBOX_ENABLED=FALSE" >> .Renviron
