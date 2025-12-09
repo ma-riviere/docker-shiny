@@ -1,3 +1,6 @@
+# Configure PPM repository for binary packages
+options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/trixie/latest"))
+
 # Helpers
 read_packages <- function(profile) {
     packages_file <- paste0("packages-", profile, ".txt")

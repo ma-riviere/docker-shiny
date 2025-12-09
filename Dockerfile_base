@@ -63,7 +63,8 @@ USER shiny
 WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=base
 ENV RENV_PATHS_CACHE=/opt/renv/cache
-RUN R -e "source('renv/activate.R'); renv::restore()"
+RUN --mount=type=cache,target=/opt/renv/cache,uid=1000,gid=1000 \
+    R -e "source('renv/activate.R'); renv::restore()"
 
 RUN echo "RENV_CONFIG_SANDBOX_ENABLED=FALSE" >> .Renviron
 RUN echo "RENV_CONFIG_SYNCHRONIZED_CHECK = FALSE" >> .Renviron
