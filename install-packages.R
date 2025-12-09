@@ -12,23 +12,22 @@ get_pkg_name <- function(remotes_string) {
     return(res$package %||% res$repo)
 }
 
-# Create base profile
-cat("Installing base profile packages...\n")
-renv::activate(profile = "base")
+profiles <- list.files(pattern = "packages-.*.txt")
+profiles <- sub("packages-", "", profiles)
+profiles <- sub(".txt", "", profiles)
 
-base_packages <- read_packages("base")
+cat("Found", length(profiles), "profiles: ", paste(profiles, collapse = ", "), "\n")
 
-renv::install(base_packages, prompt = FALSE)
-renv::snapshot(packages = sapply(base_packages, get_pkg_name), prompt = FALSE, force = TRUE)
+# Create profiles
+for (profile in profiles) {
+    cat("\nInstalling profile: ", profile, "\n")
+    renv::activate(profile = profile)
 
-# Create tests profile
-cat("\nInstalling tests profile packages...\n")
-renv::activate(profile = "tests")
+    packages <- read_packages(profile)
 
-tests_packages <- read_packages("tests")
-
-renv::install(tests_packages, prompt = FALSE)
-renv::snapshot(packages = sapply(tests_packages, get_pkg_name), prompt = FALSE, force = TRUE)
+    renv::install(packages, prompt = FALSE)
+    renv::snapshot(packages = sapply(packages, get_pkg_name), prompt = FALSE, force = TRUE)
+}
 
 # Reset to default
 renv::activate(profile = "default")
