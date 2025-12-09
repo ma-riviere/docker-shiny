@@ -1,7 +1,7 @@
 # Configure PPM repository for binary packages, with CRAN as fallback
 options(
     repos = c(
-        PPM = "https://packagemanager.posit.co/cran/__linux__/trixie/latest",
+        PPM = "https://packagemanager.posit.co/cran/__linux__/bookworm/latest",
         CRAN = "https://cloud.r-project.org"
     )
 )
