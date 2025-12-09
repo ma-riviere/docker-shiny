@@ -19,11 +19,7 @@ renv::activate(profile = "base")
 base_packages <- read_packages("base")
 
 renv::install(base_packages, prompt = FALSE)
-renv::snapshot(
-    packages = sapply(base_packages, get_pkg_name),
-    prompt = FALSE,
-    force = TRUE
-)
+renv::snapshot(packages = sapply(base_packages, get_pkg_name), prompt = FALSE, force = TRUE)
 
 # Create tests profile
 cat("\nInstalling tests profile packages...\n")
@@ -32,11 +28,7 @@ renv::activate(profile = "tests")
 tests_packages <- read_packages("tests")
 
 renv::install(tests_packages, prompt = FALSE)
-renv::snapshot(
-    packages = sapply(tests_packages, get_pkg_name),
-    prompt = FALSE,
-    force = TRUE
-)
+renv::snapshot(packages = sapply(tests_packages, get_pkg_name), prompt = FALSE, force = TRUE)
 
 # Reset to default
 renv::activate(profile = "default")

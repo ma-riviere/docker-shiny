@@ -11,9 +11,9 @@ on:
                 default: false
 
 env:
-    DEBIAN_VERSION: bookworm
-    DEBIAN_NUMERIC: 12
-    R_VERSION: 4.5.1
+    DEBIAN_VERSION: trixie
+    DEBIAN_NUMERIC: 13
+    R_VERSION: 4.5.2
     SHINY_SERVER_VERSION: 1.5.23.1030
 
 permissions:
