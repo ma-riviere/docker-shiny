@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 ARG DEBIAN_VERSION=trixie
 ARG DEBIAN_NUMERIC=13
 ARG R_VERSION=4.5.2
@@ -62,9 +64,6 @@ RUN --mount=type=cache,target=/opt/renv/cache \
     R -e "source('renv/activate.R'); renv::restore()"
 
 USER shiny
-RUN echo "RENV_CONFIG_SANDBOX_ENABLED=FALSE" >> .Renviron
-RUN echo "RENV_CONFIG_SYNCHRONIZED_CHECK = FALSE" >> .Renviron
-
 EXPOSE 3838
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
