@@ -3,8 +3,12 @@
     "Version": "4.5.1",
     "Repositories": [
       {
+        "Name": "PPM",
+        "URL": "https://packagemanager.posit.co/cran/__linux__/trixie/latest"
+      },
+      {
         "Name": "CRAN",
-        "URL": "https://packagemanager.posit.co/cran/__linux__/bookworm/latest"
+        "URL": "https://cloud.r-project.org"
       }
     ]
   },

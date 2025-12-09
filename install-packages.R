@@ -1,5 +1,10 @@
-# Configure PPM repository for binary packages
-options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/bookworm/latest"))
+# Configure PPM repository for binary packages, with CRAN as fallback
+options(
+    repos = c(
+        PPM = "https://packagemanager.posit.co/cran/__linux__/trixie/latest",
+        CRAN = "https://cloud.r-project.org"
+    )
+)
 
 # Helpers
 read_packages <- function(profile) {
