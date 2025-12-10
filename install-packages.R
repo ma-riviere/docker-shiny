@@ -1,9 +1,6 @@
 # Configure PPM repository for binary packages, with CRAN as fallback
 options(
-    repos = c(
-        PPM = "https://packagemanager.posit.co/cran/__linux__/bookworm/latest",
-        CRAN = "https://cloud.r-project.org"
-    )
+    repos = c(PPM = "https://packagemanager.posit.co/cran/__linux__/jammy/latest", CRAN = "https://cloud.r-project.org")
 )
 
 # Helpers
@@ -20,6 +17,12 @@ get_pkg_name <- function(remotes_string) {
     return(res$package %||% res$repo)
 }
 
+# Main
+
+unlink("renv/library", recursive = TRUE)
+source("renv/activate.R")
+renv::upgrade(prompt = FALSE)
+
 profiles <- list.files(pattern = "packages-.*.txt")
 profiles <- sub("packages-", "", profiles)
 profiles <- sub(".txt", "", profiles)
@@ -33,9 +36,12 @@ for (profile in profiles) {
 
     packages <- read_packages(profile)
 
-    renv::install(packages, prompt = FALSE)
+    renv::install(packages, prompt = FALSE, rebuild = TRUE, repos = getOption("repos"))
     renv::snapshot(packages = sapply(packages, get_pkg_name), prompt = FALSE, force = TRUE)
 }
 
 # Reset to default
 renv::activate(profile = "default")
+
+# Remove root renv.lock
+unlink("renv.lock")

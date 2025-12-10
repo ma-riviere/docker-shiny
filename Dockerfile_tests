@@ -27,16 +27,13 @@ ENV CHROMOTE_CHROME=/usr/bin/chromium
 ENV SHINYTEST2_CHROMIUM_PATH=/usr/bin/chromium
 
 # Install R dependencies
-## Note: running as ROOT until buildkit inherits permissions
-## - https://github.com/moby/buildkit/issues/1237
+USER shiny
 WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=tests
 ENV RENV_PATHS_CACHE=/opt/renv/cache
-RUN --mount=type=cache,target=/opt/renv/cache \
-    R -e "source('renv/activate.R'); renv::restore()"
+RUN R -e "source('renv/activate.R'); renv::restore()"
 
 EXPOSE 3838
 
 # For docker run (ENTRYPOINT sets a "fixed" executable, to which args can be passed)
-USER shiny
 ENTRYPOINT ["/srv/shiny-server/docker-shiny.sh"]

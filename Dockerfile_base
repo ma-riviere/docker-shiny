@@ -57,15 +57,12 @@ COPY --chown=shiny:shiny renv/ /srv/shiny-server/renv/
 COPY --chmod=755 docker-shiny.sh /srv/shiny-server/docker-shiny.sh
 
 # Install R dependencies
-## Note: running as ROOT until buildkit inherits permissions
-## - https://github.com/moby/buildkit/issues/1237
+USER shiny
 WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=base
 ENV RENV_PATHS_CACHE=/opt/renv/cache
-RUN --mount=type=cache,target=/opt/renv/cache \
-    R -e "source('renv/activate.R'); renv::restore()"
+RUN R -e "source('renv/activate.R'); renv::restore()"
 
-USER shiny
 EXPOSE 3838
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
