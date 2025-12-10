@@ -1,9 +1,5 @@
 # syntax=docker/dockerfile:1
-
 ARG DEBIAN_VERSION=bookworm
-ARG DEBIAN_NUMERIC=12
-ARG R_VERSION=4.5.2
-
 FROM debian:${DEBIAN_VERSION}-slim
 
 # Locale setup
@@ -24,20 +20,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get upgrade -y
 
 # Install R
-ARG R_VERSION
-ARG DEBIAN_NUMERIC
+## https://docs.posit.co/resources/install-r.html
+ARG R_VERSION=4.5.2
+ARG DEBIAN_NUMERIC=12
 RUN curl -O https://cdn.posit.co/r/debian-${DEBIAN_NUMERIC}/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb \
     && apt-get update && apt-get install -y --no-install-recommends ./r-${R_VERSION}_1_$(dpkg --print-architecture).deb \
     && ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R \
     && ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript \
     && rm r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 
-# Install Shiny Server and cleanup apt cache (same layer to reduce image size)
+# Install Shiny Server: Posit's latest for amd64, Debian repos for other architectures
 ARG SHINY_SERVER_VERSION=1.5.23.1030
-RUN wget https://download3.rstudio.org/ubuntu-20.04/x86_64/shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
-    && apt-get update \
+RUN apt-get update \
+    && if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+    curl -O https://download3.rstudio.org/ubuntu-20.04/x86_64/shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
     && apt-get install -y --no-install-recommends ./shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
-    && rm shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
+    && rm shiny-server-${SHINY_SERVER_VERSION}-amd64.deb; \
+    else \
+    apt-get install -y --no-install-recommends shiny-server; \
+    fi \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Create shiny user and directories
