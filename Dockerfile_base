@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG DEBIAN_VERSION=trixie
-ARG DEBIAN_NUMERIC=13
+ARG DEBIAN_VERSION=bookworm
+ARG DEBIAN_NUMERIC=12
 ARG R_VERSION=4.5.2
 
 FROM debian:${DEBIAN_VERSION}-slim
@@ -66,6 +66,9 @@ RUN --mount=type=cache,target=/opt/renv/cache \
 
 USER shiny
 EXPOSE 3838
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3838/ || exit 1
 
 # For docker run (CMD can be overriden)
 CMD ["/srv/shiny-server/docker-shiny.sh"]
