@@ -6,15 +6,9 @@ on:
     workflow_dispatch:
         inputs:
             force_rebuild:
-                description: 'Force rebuild both images'
+                description: "Force rebuild both images"
                 type: boolean
                 default: false
-
-env:
-    DEBIAN_VERSION: trixie
-    DEBIAN_NUMERIC: 13
-    R_VERSION: 4.5.2
-    SHINY_SERVER_VERSION: 1.5.23.1030
 
 permissions:
     contents: read
@@ -102,11 +96,6 @@ jobs:
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
-                  build-args: |
-                      DEBIAN_VERSION=${{ env.DEBIAN_VERSION }}
-                      DEBIAN_NUMERIC=${{ env.DEBIAN_NUMERIC }}
-                      R_VERSION=${{ env.R_VERSION }}
-                      SHINY_SERVER_VERSION=${{ env.SHINY_SERVER_VERSION }}
                   cache-from: type=gha,scope=base
                   cache-to: type=gha,mode=max,scope=base
                   platforms: linux/amd64
