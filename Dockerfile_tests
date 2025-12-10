@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 ARG REGISTRY_IMAGE=ghcr.io/ma-riviere/docker-shiny
 FROM ${REGISTRY_IMAGE}:base
 
@@ -7,7 +5,6 @@ FROM ${REGISTRY_IMAGE}:base
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libssl-dev \
     libcurl4-openssl-dev \
     zlib1g-dev \
     libxml2-dev \
@@ -28,13 +25,8 @@ ENV SHINYTEST2_CHROMIUM_PATH=/usr/bin/chromium
 
 # Install R dependencies
 USER shiny
-WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=tests
-ENV RENV_PATHS_CACHE=/opt/renv/cache
-ENV RENV_CONFIG_PPM_ENABLED=TRUE
 RUN R -e "source('renv/activate.R'); renv::restore()"
-
-EXPOSE 3838
 
 # For docker run (ENTRYPOINT sets a "fixed" executable, to which args can be passed)
 ENTRYPOINT ["/srv/shiny-server/docker-shiny.sh"]

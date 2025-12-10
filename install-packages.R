@@ -41,6 +41,7 @@ for (profile in profiles) {
 
 # Reset to default
 renv::activate(profile = "default")
+source(".Rprofile")
 
 # Remove root renv.lock
 unlink("renv.lock")
