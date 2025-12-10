@@ -68,8 +68,5 @@ RUN R -e "source('renv/activate.R'); renv::restore()"
 
 EXPOSE 3838
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3838/ || exit 1
-
 # For docker run (CMD can be overriden)
 CMD ["/srv/shiny-server/docker-shiny.sh"]

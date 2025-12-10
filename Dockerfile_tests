@@ -28,5 +28,8 @@ USER shiny
 ENV RENV_PROFILE=tests
 RUN R -e "source('renv/activate.R'); renv::restore()"
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3838/ || exit 1
+
 # For docker run (ENTRYPOINT sets a "fixed" executable, to which args can be passed)
 ENTRYPOINT ["/srv/shiny-server/docker-shiny.sh"]
