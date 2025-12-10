@@ -1,7 +1,6 @@
-# Configure PPM repository for binary packages, with CRAN as fallback
-options(
-    repos = c(PPM = "https://packagemanager.posit.co/cran/__linux__/jammy/latest", CRAN = "https://cloud.r-project.org")
-)
+# Configure PPM repository for binary packages
+# Note: Use generic URL here; set RENV_CONFIG_PPM_ENABLED=TRUE in Docker for platform auto-detection
+options(repos = c(PPM = "https://packagemanager.posit.co/cran/latest"))
 
 # Helpers
 read_packages <- function(profile) {

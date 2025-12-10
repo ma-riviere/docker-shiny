@@ -61,6 +61,7 @@ USER shiny
 WORKDIR /srv/shiny-server
 ENV RENV_PROFILE=base
 ENV RENV_PATHS_CACHE=/opt/renv/cache
+ENV RENV_CONFIG_PPM_ENABLED=TRUE
 RUN R -e "source('renv/activate.R'); renv::restore()"
 
 EXPOSE 3838
