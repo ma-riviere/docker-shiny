@@ -26,11 +26,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install R
 ARG R_VERSION
 ARG DEBIAN_NUMERIC
-RUN wget https://cdn.posit.co/r/debian-${DEBIAN_NUMERIC}/pkgs/r-${R_VERSION}_1_amd64.deb \
-    && apt-get update && apt-get install -y --no-install-recommends ./r-${R_VERSION}_1_amd64.deb \
+RUN curl -O https://cdn.posit.co/r/debian-${DEBIAN_NUMERIC}/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb \
+    && apt-get update && apt-get install -y --no-install-recommends ./r-${R_VERSION}_1_$(dpkg --print-architecture).deb \
     && ln -s /opt/R/${R_VERSION}/bin/R /usr/local/bin/R \
     && ln -s /opt/R/${R_VERSION}/bin/Rscript /usr/local/bin/Rscript \
-    && rm r-${R_VERSION}_1_amd64.deb
+    && rm r-${R_VERSION}_1_$(dpkg --print-architecture).deb
 
 # Install Shiny Server and cleanup apt cache (same layer to reduce image size)
 ARG SHINY_SERVER_VERSION=1.5.23.1030
