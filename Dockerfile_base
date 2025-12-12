@@ -11,9 +11,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     ca-certificates \
     curl \
-    libssl-dev \
+    git \
     xtail \
     lsb-release \
+    pandoc \
+    build-essential \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    libgit2-dev \
+    libssh2-1-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff-dev \
+    libjpeg-dev \
     chromium \
     chromium-driver \
     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
