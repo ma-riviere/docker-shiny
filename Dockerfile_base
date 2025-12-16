@@ -1,0 +1,73 @@
+ARG DEBIAN_VERSION=bookworm
+FROM debian:${DEBIAN_VERSION}-slim
+
+# Locale setup
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+
+# Install locales, upgrade system, and install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    locales \
+    ca-certificates \
+    curl \
+    git \
+    xtail \
+    lsb-release \
+    pandoc \
+    build-essential \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    libgit2-dev \
+    libssh2-1-dev \
+    libfontconfig1-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
+    libtiff-dev \
+    libjpeg-dev \
+    # chromote/shinytest2
+    chromium \
+    chromium-driver \
+    # Postgres (R packages)
+    libpq-dev \
+    libpq5 \
+    # OTL
+    libprotobuf32 \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
+    && apt-get upgrade -y \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Set Chrome environment variables for testing packages
+ENV CHROMOTE_CHROME=/usr/bin/chromium
+ENV SHINYTEST2_CHROMIUM_PATH=/usr/bin/chromium
+
+# Install Shiny Server: Posit's latest for amd64, Debian repos for other architectures
+ARG SHINY_SERVER_VERSION=1.5.23.1030
+RUN apt-get update \
+    && if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+    curl -O https://download3.rstudio.org/ubuntu-20.04/x86_64/shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
+    && apt-get install -y --no-install-recommends ./shiny-server-${SHINY_SERVER_VERSION}-amd64.deb \
+    && rm shiny-server-${SHINY_SERVER_VERSION}-amd64.deb; \
+    else \
+    apt-get install -y --no-install-recommends shiny-server; \
+    fi \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create shiny user and directories
+RUN getent group shiny || groupadd -r shiny \
+    && getent passwd shiny || useradd -r -g shiny -d /srv/shiny-server -s /sbin/nologin shiny \
+    && mkdir -p /srv/shiny-server /var/log/shiny-server \
+    && chown -R shiny:shiny /srv/shiny-server /var/log/shiny-server /var/lib/shiny-server \
+    && chmod 755 /srv/shiny-server
+
+# Create renv cache directory
+RUN mkdir -p /opt/renv/cache && chown -R shiny:shiny /opt/renv
+
+WORKDIR /srv/shiny-server
+COPY --chmod=755 docker-shiny.sh ./docker-shiny.sh
+
+EXPOSE 3838

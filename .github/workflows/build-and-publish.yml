@@ -1,0 +1,194 @@
+name: Build and Publish Docker Images
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+        inputs:
+            force_rebuild:
+                description: "Force rebuild all images"
+                type: boolean
+                default: false
+
+permissions:
+    contents: read
+    packages: write
+
+jobs:
+    check_base:
+        name: Check if base image exists
+        runs-on: ubuntu-latest
+        outputs:
+            exists: ${{ steps.check.outputs.exists }}
+        steps:
+            - name: Login to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.CICD_GITHUB_PAT }}
+
+            - name: Check image existence
+              id: check
+              run: |
+                  if docker manifest inspect ghcr.io/${{ github.repository }}:base >/dev/null 2>&1; then
+                      echo "exists=true" >> $GITHUB_OUTPUT
+                  else
+                      echo "exists=false" >> $GITHUB_OUTPUT
+                  fi
+
+    detect_base_changes:
+        name: Detect base image changes
+        runs-on: ubuntu-latest
+        outputs:
+            base_changed: ${{ steps.filter.outputs.base }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 2
+
+            - name: Detect file changes
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      base:
+                        - 'Dockerfile_base'
+
+    build_base:
+        name: Build base image
+        runs-on: ubuntu-latest
+        needs: [check_base, detect_base_changes]
+        if: |
+            github.event.inputs.force_rebuild == 'true' ||
+            needs.check_base.outputs.exists == 'false' ||
+            needs.detect_base_changes.outputs.base_changed == 'true'
+        outputs:
+            built: ${{ steps.set_output.outputs.built }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build and push base
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./Dockerfile_base
+                  push: true
+                  tags: ghcr.io/${{ github.repository }}:base
+                  platforms: linux/amd64
+
+            - name: Set outputs
+              id: set_output
+              run: echo "built=true" >> $GITHUB_OUTPUT
+
+    detect_version_changes:
+        name: Detect R version changes
+        runs-on: ubuntu-latest
+        outputs:
+            dockerfile_changed: ${{ steps.filter.outputs.dockerfile }}
+            r45_changed: ${{ steps.filter.outputs.r45 }}
+            r44_changed: ${{ steps.filter.outputs.r44 }}
+            r43_changed: ${{ steps.filter.outputs.r43 }}
+            packages_changed: ${{ steps.filter.outputs.packages }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 2
+
+            - name: Detect file changes
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      dockerfile:
+                        - 'Dockerfile'
+                      r45:
+                        - 'renv/profiles/docker-4.5/**'
+                      r44:
+                        - 'renv/profiles/docker-4.4/**'
+                      r43:
+                        - 'renv/profiles/docker-4.3/**'
+                      packages:
+                        - 'packages-docker.txt'
+
+    build_r_versions:
+        name: Build R ${{ matrix.version_short }} image
+        runs-on: ubuntu-latest
+        needs: [build_base, detect_version_changes]
+        if: always() && needs.build_base.result != 'failure'
+        strategy:
+            matrix:
+                include:
+                    - version: "4.5.2"
+                      version_short: "4.5"
+                      changed_filter: r45_changed
+                      is_latest: true
+                    - version: "4.4.3"
+                      version_short: "4.4"
+                      changed_filter: r44_changed
+                      is_latest: false
+                    - version: "4.3.3"
+                      version_short: "4.3"
+                      changed_filter: r43_changed
+                      is_latest: false
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Check if build needed
+              id: should_build
+              run: |
+                  if [ "${{ github.event.inputs.force_rebuild }}" = "true" ] || \
+                     [ "${{ needs.build_base.outputs.built }}" = "true" ] || \
+                     [ "${{ needs.detect_version_changes.outputs.dockerfile_changed }}" = "true" ] || \
+                     [ "${{ needs.detect_version_changes.outputs[matrix.changed_filter] }}" = "true" ] || \
+                     [ "${{ needs.detect_version_changes.outputs.packages_changed }}" = "true" ]; then
+                      echo "build=true" >> $GITHUB_OUTPUT
+                  else
+                      echo "build=false" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Set up Docker Buildx
+              if: steps.should_build.outputs.build == 'true'
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to GHCR
+              if: steps.should_build.outputs.build == 'true'
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Prepare tags
+              if: steps.should_build.outputs.build == 'true'
+              id: tags
+              run: |
+                  TAGS="ghcr.io/${{ github.repository }}:${{ matrix.version_short }}"
+                  if [ "${{ matrix.is_latest }}" = "true" ]; then
+                      TAGS="$TAGS,ghcr.io/${{ github.repository }}:latest"
+                  fi
+                  echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+            - name: Build and push
+              if: steps.should_build.outputs.build == 'true'
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./Dockerfile
+                  push: true
+                  tags: ${{ steps.tags.outputs.tags }}
+                  build-args: |
+                      REGISTRY_IMAGE=ghcr.io/${{ github.repository }}
+                      R_VERSION=${{ matrix.version }}
+                      R_VERSION_SHORT=${{ matrix.version_short }}
+                  platforms: linux/amd64

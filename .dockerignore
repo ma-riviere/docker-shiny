@@ -1,0 +1,13 @@
+.git/
+.github/
+*.md
+.lintr
+air.toml
+TODO.md
+CLAUDE.md
+renv/library/
+renv/.cache/
+.Rhistory
+.RData
+*.Rproj
+packages-*.txt
