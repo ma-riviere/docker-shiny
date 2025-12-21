@@ -24,7 +24,8 @@ ENV RENV_PATHS_CACHE=/opt/renv/cache \
     RENV_CONFIG_SYNCHRONIZED_CHECK=FALSE \
     RENV_PROFILE=docker-${R_VERSION_SHORT}
 
-RUN R -e "source('renv/activate.R'); renv::restore()"
+RUN --mount=type=secret,id=GITHUB_PAT,env=GITHUB_PAT \
+    R -e "source('renv/activate.R'); renv::restore()"
 
 EXPOSE 3838
 CMD ["/srv/shiny-server/docker-shiny.sh"]
