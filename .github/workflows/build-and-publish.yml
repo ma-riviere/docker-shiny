@@ -86,6 +86,8 @@ jobs:
                   push: true
                   tags: ghcr.io/${{ github.repository }}:base
                   platforms: linux/amd64
+                  secrets: |
+                      GITHUB_PAT=${{ secrets.CICD_GITHUB_PAT }}
 
             - name: Set outputs
               id: set_output
@@ -192,3 +194,5 @@ jobs:
                       R_VERSION=${{ matrix.version }}
                       R_VERSION_SHORT=${{ matrix.version_short }}
                   platforms: linux/amd64
+                  secrets: |
+                      GITHUB_PAT=${{ secrets.CICD_GITHUB_PAT }}
