@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     lsb-release \
     pandoc \
     build-essential \
+    cmake \
     libssl-dev \
     libcurl4-openssl-dev \
     libxml2-dev \
