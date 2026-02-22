@@ -22,10 +22,11 @@ ENV RENV_PATHS_CACHE=/opt/renv/cache \
     RENV_CONFIG_PPM_ENABLED=TRUE \
     RENV_CONFIG_SANDBOX_ENABLED=FALSE \
     RENV_CONFIG_SYNCHRONIZED_CHECK=FALSE \
+    RENV_CONFIG_PAK_ENABLED=TRUE \
     RENV_PROFILE=docker-${R_VERSION_SHORT}
 
 RUN --mount=type=secret,id=GITHUB_PAT,env=GITHUB_PAT \
-    R -e "source('renv/activate.R'); renv::restore()"
+    R -e "source('renv/activate.R'); renv::install('pak'); renv::restore()"
 
 EXPOSE 3838
 CMD ["/srv/shiny-server/docker-shiny.sh"]
