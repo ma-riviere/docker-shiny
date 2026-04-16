@@ -131,7 +131,7 @@ jobs:
         strategy:
             matrix:
                 include:
-                    - version: "4.5.2"
+                    - version: "4.5.3"
                       version_short: "4.5"
                       changed_filter: r45_changed
                       is_latest: true
