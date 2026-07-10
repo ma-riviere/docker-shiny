@@ -30,9 +30,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     libtiff-dev \
     libjpeg-dev \
-    # chromote/shinytest2
-    chromium \
-    chromium-driver \
     # Postgres (R packages)
     libpq-dev \
     libpq5 \
@@ -44,9 +41,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get upgrade -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Google Chrome for browser testing (chromote/shinytest2).
+# Debian bookworm's chromium package (v150) crashes on startup (SIGTRAP) in
+# headless remote-debugging mode inside containers, breaking shinytest2. Google
+# Chrome stable (same upstream version, different build) works, so we use it.
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub -o /usr/share/keyrings/google-chrome.asc \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-chrome-stable fonts-liberation \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 # Set Chrome environment variables for testing packages
-ENV CHROMOTE_CHROME=/usr/bin/chromium
-ENV SHINYTEST2_CHROMIUM_PATH=/usr/bin/chromium
+ENV CHROMOTE_CHROME=/usr/bin/google-chrome-stable
+ENV SHINYTEST2_CHROMIUM_PATH=/usr/bin/google-chrome-stable
 
 # Install Shiny Server: Posit's latest for amd64, Debian repos for other architectures
 ARG SHINY_SERVER_VERSION=1.5.23.1030

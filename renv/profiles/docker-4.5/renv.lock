@@ -3,12 +3,8 @@
     "Version": "4.5.3",
     "Repositories": [
       {
-        "Name": "PPM",
-        "URL": "https://packagemanager.posit.co/cran/latest"
-      },
-      {
         "Name": "CRAN",
-        "URL": "https://cloud.r-project.org"
+        "URL": "https://packagemanager.posit.co/cran/2026-04-20"
       }
     ]
   },
