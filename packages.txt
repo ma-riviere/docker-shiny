@@ -7,7 +7,6 @@ DT
 shinyjs
 shinycssloaders
 shinyalert
-curso-r/auth0
 ma-riviere/auth0r
 ma-riviere/shinyutils
 sodium

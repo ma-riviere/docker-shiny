@@ -1,25 +1,16 @@
 #!/bin/bash
+# Shiny Server sanitizes the environment it passes to R application processes,
+# so container-level configuration (compose env_file, docker -e, ...) must be
+# written to .Renviron for the apps to see it.
+set -euo pipefail
 
-echo "Environment variables at script start:"
-
-# Read AUTH0_CLIENT_SECRET Docker secret file and export as environment variable
-if [ -f "/run/secrets/AUTH0_CLIENT_SECRET" ]; then
-    export AUTH0_CLIENT_SECRET=$(cat /run/secrets/AUTH0_CLIENT_SECRET)
-    echo "Loaded AUTH0_CLIENT_SECRET from Docker secret"
-fi
-
-# Add variables to Renviron.site
 env_file="/srv/shiny-server/.Renviron"
+exclude_pattern="^(PATH|HOME|HOSTNAME|USER|LOGNAME|SHELL|PWD|OLDPWD|TERM|SHLVL|LANG|LANGUAGE|TZ|_|container)=|^(LC|DOCKER|KUBERNETES)_[^=]*="
 
-# Clear existing custom environment variables from the file
-sed -i '/^# Custom environment variables/,$d' "${env_file}"
-
-# Add a marker and the current environment variables to the file
-echo "# Custom environment variables" >> "${env_file}"
-env | while read -r line; do
-    var_name="${line%%=*}"
-    echo "$line" >> "${env_file}"
-done
+tmp_file="$(mktemp "${env_file}.XXXXXX")"
+env | grep -vE "${exclude_pattern}" > "${tmp_file}" || true
+chmod 600 "${tmp_file}"
+mv -f "${tmp_file}" "${env_file}"
 
 xtail /var/log/shiny-server/ &
-exec env shiny-server 2>&1
+exec shiny-server 2>&1
