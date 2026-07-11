@@ -3,6 +3,7 @@
 *.md
 .lintr
 air.toml
+jarl.toml
 .Rprofile
 .Rhistory
 .RData
