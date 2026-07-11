@@ -104,11 +104,12 @@ FROM builder AS test
 # containers, breaking shinytest2; Google Chrome stable works.
 # git: actions/checkout inside a container job needs git >= 2.18 on PATH,
 # otherwise it falls back to a REST API tarball download that cannot handle
-# submodules (and CI consumers check out with submodules: recursive)
+# submodules (and CI consumers check out with submodules: recursive).
+# libgit2-1.9: dev-profile PPM binaries (git2r, gert) link libgit2.so.1.9
 RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub -o /usr/share/keyrings/google-chrome.asc \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends google-chrome-stable fonts-liberation git \
+    && apt-get install -y --no-install-recommends google-chrome-stable fonts-liberation git libgit2-1.9 \
     && rm -rf /var/lib/apt/lists/*
 
 # CI containers run as root, where Chrome's sandbox cannot be used.
