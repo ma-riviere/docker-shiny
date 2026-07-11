@@ -101,11 +101,14 @@ RUN find "${R_LIBS_SITE}" -depth -type d \
 FROM builder AS test
 
 # Debian's chromium crashes (SIGTRAP) in headless remote-debugging mode inside
-# containers, breaking shinytest2; Google Chrome stable works
+# containers, breaking shinytest2; Google Chrome stable works.
+# git: actions/checkout inside a container job needs git >= 2.18 on PATH,
+# otherwise it falls back to a REST API tarball download that cannot handle
+# submodules (and CI consumers check out with submodules: recursive)
 RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub -o /usr/share/keyrings/google-chrome.asc \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends google-chrome-stable fonts-liberation \
+    && apt-get install -y --no-install-recommends google-chrome-stable fonts-liberation git \
     && rm -rf /var/lib/apt/lists/*
 
 # CI containers run as root, where Chrome's sandbox cannot be used.
