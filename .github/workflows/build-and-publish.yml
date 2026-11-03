@@ -23,6 +23,19 @@ permissions:
   packages: write
 
 jobs:
+  # GitHub disables scheduled workflows after 60 days without repository activity;
+  # re-enabling through the API on every scheduled run keeps the monthly rebuild alive
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable this workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/build-and-publish.yml/enable"
+
   build:
     runs-on: ubuntu-latest
     strategy:

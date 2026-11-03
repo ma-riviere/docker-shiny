@@ -127,8 +127,10 @@ ARG SHINY_SERVER_VERSION
 COPY --from=r-deb /opt/R/${R_VERSION} /opt/R/${R_VERSION}
 
 # Explicit runtime allowlist: the R deb's Depends minus toolchain/-dev packages,
-# plus the shared libraries the package library links (validated by verify)
+# plus the shared libraries the package library links (validated by verify).
+# upgrade: packages preinstalled in debian-slim otherwise keep the base image's versions
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
         fontconfig \
         libbz2-1.0 \
